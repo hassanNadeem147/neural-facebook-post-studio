@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050812">
+  <title>Neural — Facebook Post Studio</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Sora, "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      --ink: #f7f8fc;
+      --muted: #a5adbd;
+      --soft: #747f92;
+      --line: rgba(218, 230, 248, .15);
+      --glass: rgba(11, 16, 29, .58);
+      --blue: #a9c9ff;
+      --gold: #f3d5a2;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      color: var(--ink);
+      background: #050812;
+    }
+
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .art {
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      pointer-events: none;
+      background: #03060c;
+    }
+
+    .veil {
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 42%, rgba(5, 8, 18, .46), rgba(5, 8, 18, .24) 38%, rgba(5, 8, 18, .66) 100%),
+        linear-gradient(180deg, rgba(3, 6, 15, .5), transparent 28%, rgba(3, 6, 15, .46));
+    }
+
+    .grain {
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      pointer-events: none;
+      opacity: .12;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E");
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      width: min(100% - 64px, 1320px);
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 92px;
+      border-bottom: 1px solid rgba(228, 236, 249, .11);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: .17em;
+      text-decoration: none;
+    }
+
+    .brand-mark { width: 24px; height: 20px; fill: currentColor; }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #dce6f4;
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #9ce8c1;
+      box-shadow: 0 0 12px rgba(156, 232, 193, .8);
+    }
+
+    main {
+      display: grid;
+      flex: 1;
+      grid-template-columns: minmax(0, .91fr) minmax(470px, 1.09fr);
+      align-items: center;
+      gap: clamp(44px, 8vw, 126px);
+      padding: 58px 0 70px;
+    }
+
+    .intro { max-width: 500px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 23px;
+      color: #d7c29c;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 25px;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, var(--gold), rgba(243, 213, 162, .15));
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(45px, 5.5vw, 76px);
+      font-weight: 440;
+      letter-spacing: -.065em;
+      line-height: 1.04;
+      text-wrap: balance;
+    }
+
+    h1 span {
+      display: block;
+      color: transparent;
+      background: linear-gradient(100deg, #f5e4c5 2%, #f8f8fb 44%, #b9d2ff 98%);
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    .intro-copy {
+      max-width: 410px;
+      margin: 24px 0 0;
+      color: #c1c7d2;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .workflow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+    }
+
+    .workflow-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 12px;
+      border: 1px solid rgba(225, 234, 248, .13);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .035);
+      color: #dce3ef;
+      font-size: 11px;
+      letter-spacing: .025em;
+    }
+
+    .workflow-step span {
+      color: #d7c29c;
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .studio {
+      position: relative;
+      isolation: isolate;
+      padding: 1px;
+      border: 1px solid rgba(230, 238, 250, .24);
+      border-radius: 25px;
+      background:
+        linear-gradient(130deg, rgba(255, 230, 193, .55), rgba(255, 255, 255, .11) 31%, rgba(176, 205, 247, .29) 100%);
+      box-shadow:
+        0 35px 100px rgba(0, 0, 0, .43),
+        0 8px 24px rgba(2, 8, 20, .4),
+        0 0 70px rgba(148, 184, 235, .13),
+        inset 0 1px 0 rgba(255, 255, 255, .32);
+      transform: perspective(1200px) rotateY(-2deg) rotateX(1deg);
+      transition: transform .5s cubic-bezier(.2, .75, .3, 1), box-shadow .5s ease;
+    }
+
+    .studio:hover {
+      box-shadow:
+        0 42px 110px rgba(0, 0, 0, .48),
+        0 10px 28px rgba(2, 8, 20, .42),
+        0 0 90px rgba(148, 184, 235, .19),
+        inset 0 1px 0 rgba(255, 255, 255, .35);
+      transform: perspective(1200px) rotateY(0) rotateX(0) translateY(-3px);
+    }
+
+    .studio-inner {
+      overflow: hidden;
+      border-radius: 24px;
+      background:
+        linear-gradient(145deg, rgba(18, 24, 39, .91), rgba(9, 13, 24, .93));
+      -webkit-backdrop-filter: blur(30px) saturate(.75);
+      backdrop-filter: blur(30px) saturate(.75);
+    }
+
+    .studio-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 75px;
+      padding: 0 27px;
+      border-bottom: 1px solid rgba(225, 233, 247, .1);
+    }
+
+    .studio-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 580;
+      letter-spacing: .01em;
+    }
+
+    .studio-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid rgba(226, 234, 247, .17);
+      border-radius: 11px;
+      background: linear-gradient(145deg, rgba(243, 213, 162, .14), rgba(169, 201, 255, .12));
+      color: #f3dfbd;
+    }
+
+    .studio-icon svg { width: 17px; height: 17px; }
+
+    .secure-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #aab5c6;
+      font-size: 10px;
+      letter-spacing: .03em;
+    }
+
+    .secure-label svg { width: 13px; height: 13px; color: #a9c9ff; }
+
+    .studio-body { padding: 27px; }
+
+    .field-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 11px;
+    }
+
+    .field-label {
+      color: #edf0f6;
+      font-size: 12px;
+      font-weight: 570;
+    }
+
+    .field-hint, .count {
+      color: #8590a2;
+      font-size: 10px;
+    }
+
+    .prompt {
+      display: block;
+      width: 100%;
+      min-height: 118px;
+      resize: vertical;
+      padding: 15px 16px;
+      border: 1px solid rgba(214, 227, 247, .17);
+      border-radius: 13px;
+      outline: none;
+      background: rgba(3, 7, 15, .47);
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.7;
+      transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .prompt::placeholder { color: #717c8e; }
+
+    .prompt:focus {
+      border-color: rgba(169, 201, 255, .65);
+      background: rgba(3, 7, 15, .62);
+      box-shadow: 0 0 0 3px rgba(142, 182, 245, .11);
+    }
+
+    .prompt[aria-invalid="true"] { border-color: #f19c9c; }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 13px;
+    }
+
+    .suggestion {
+      min-height: 31px;
+      padding: 6px 10px;
+      border: 1px solid rgba(213, 225, 244, .14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .035);
+      color: #bdc6d5;
+      cursor: pointer;
+      font-size: 10px;
+      transition: border-color .2s ease, color .2s ease, background .2s ease;
+    }
+
+    .suggestion:hover {
+      border-color: rgba(243, 213, 162, .42);
+      background: rgba(243, 213, 162, .08);
+      color: #fff1d9;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .privacy-note {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #8994a6;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
+    .privacy-note svg { width: 13px; height: 13px; flex: none; }
+
+    .generate {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 18px;
+      border: 1px solid rgba(255, 247, 233, .8);
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .02)),
+        linear-gradient(105deg, rgba(204, 166, 111, .39), rgba(111, 151, 211, .4));
+      box-shadow:
+        0 6px 22px rgba(117, 155, 211, .18),
+        inset 0 1px 0 rgba(255, 255, 255, .42);
+      color: #fff;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 620;
+      white-space: nowrap;
+      transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+    }
+
+    .generate:hover:not(:disabled) {
+      box-shadow: 0 9px 28px rgba(150, 183, 235, .29), inset 0 1px 0 rgba(255, 255, 255, .5);
+      filter: brightness(1.11);
+      transform: translateY(-1px);
+    }
+
+    .generate:disabled { cursor: wait; opacity: .76; }
+    .generate svg { width: 15px; height: 15px; }
+
+    .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, .35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    .generate.is-loading .sparkle { display: none; }
+    .generate.is-loading .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result {
+      margin-top: 25px;
+      padding-top: 21px;
+      border-top: 1px solid rgba(225, 233, 247, .1);
+    }
+
+    .result-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 29px;
+    }
+
+    .result-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #dce5f3;
+      font-size: 11px;
+      font-weight: 590;
+    }
+
+    .result-label::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      content: "";
+      background: linear-gradient(135deg, var(--gold), var(--blue));
+      box-shadow: 0 0 10px rgba(169, 201, 255, .45);
+    }
+
+    .copy {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px;
+      border: 1px solid rgba(216, 230, 249, .15);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .04);
+      color: #bdc8d9;
+      cursor: pointer;
+      font-size: 10px;
+      transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .copy:hover:not(:disabled) {
+      border-color: rgba(169, 201, 255, .4);
+      background: rgba(169, 201, 255, .09);
+      color: #fff;
+    }
+
+    .copy:disabled { cursor: default; opacity: .45; }
+    .copy svg { width: 13px; height: 13px; }
+
+    .post-output {
+      min-height: 92px;
+      margin: 11px 0 0;
+      color: #e7eaf1;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .post-output p {
+      margin: 0 0 10px;
+      white-space: pre-line;
+    }
+
+    .post-output p:last-child { margin-bottom: 0; }
+    .post-output.is-placeholder { color: #778295; }
+
+    .message {
+      min-height: 16px;
+      margin: 8px 0 0;
+      color: #e7b4a8;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .message[data-kind="success"] { color: #a7dfc3; }
+    .message:empty { display: none; }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 62px;
+      border-top: 1px solid rgba(228, 236, 249, .11);
+      color: #abb4c2;
+      font-size: 10px;
+      letter-spacing: .025em;
+    }
+
+    .footer-note { display: inline-flex; align-items: center; gap: 9px; }
+    .footer-note svg { width: 14px; height: 14px; color: #d8c5a3; }
+    .footer-right { color: #838fa1; }
+
+    button:focus-visible, .suggestion:focus-visible {
+      outline: 2px solid #a9c9ff;
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 940px) {
+      .app-shell { width: min(100% - 48px, 680px); }
+      main {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        padding: 51px 0 55px;
+      }
+      .intro { max-width: 620px; }
+      h1 { max-width: 620px; font-size: clamp(44px, 8vw, 66px); }
+      .intro-copy { margin-top: 17px; }
+      .workflow { margin-top: 24px; }
+      .studio { transform: none; }
+      .studio:hover { transform: translateY(-2px); }
+    }
+
+    @media (max-width: 540px) {
+      .app-shell { width: calc(100% - 34px); }
+      .topbar { min-height: 72px; }
+      .brand { gap: 9px; font-size: 15px; }
+      .brand-mark { width: 22px; }
+      .topbar-right { gap: 7px; font-size: 10px; }
+      main { gap: 28px; padding: 39px 0 38px; }
+      .eyebrow { margin-bottom: 17px; font-size: 9px; }
+      h1 { font-size: clamp(41px, 12vw, 58px); }
+      .intro-copy { font-size: 13px; }
+      .workflow { gap: 7px; margin-top: 20px; }
+      .workflow-step { gap: 6px; padding: 8px 9px; font-size: 9px; }
+      .studio, .studio-inner { border-radius: 19px; }
+      .studio-head { min-height: 65px; padding: 0 17px; }
+      .studio-title { gap: 9px; font-size: 12px; }
+      .studio-icon { width: 31px; height: 31px; }
+      .secure-label { font-size: 9px; }
+      .studio-body { padding: 19px 17px 17px; }
+      .field-hint { display: none; }
+      .prompt { min-height: 112px; font-size: 12px; }
+      .form-actions { align-items: flex-start; flex-direction: column; }
+      .generate { width: 100%; min-height: 48px; }
+      .privacy-note { order: 1; }
+      .generate { order: 2; }
+      .result { margin-top: 22px; padding-top: 17px; }
+      .footer { min-height: 58px; font-size: 9px; }
+      .footer-right { text-align: right; }
+    }
+
+    @media (max-height: 720px) and (min-width: 941px) {
+      .topbar { min-height: 72px; }
+      main { gap: 56px; padding: 34px 0 38px; }
+      .studio-body { padding-top: 20px; padding-bottom: 20px; }
+      .prompt { min-height: 92px; }
+      .result { margin-top: 17px; padding-top: 15px; }
+      .post-output { min-height: 68px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <video class="art" autoplay muted loop playsinline preload="auto" aria-hidden="true"
+    poster="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/130837c4-0244-4f37-9c61-8d801d93fd29.jpg"
+    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260912_104303_0c6d60b2-9353-408e-9449-585108a22fb5.mp4"></video>
+  <div class="veil" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Neural home">
+        <svg class="brand-mark" viewBox="0 0 23 17" aria-hidden="true">
+          <path d="M8.15 0.9 4.55 0.9 0.5 9.3 4.1 9.3Z"></path>
+          <path d="M17 0 13.4 0 6.15 16.4 9.75 16.4Z"></path>
+          <path d="M22.9 0 19.3 0 15 7.6 18.6 7.6Z"></path>
+          <path d="M22.6 6.9 19 6.9 14.05 16.4 17.65 16.4Z"></path>
+        </svg>
+        <span>NEURAL</span>
+      </a>
+      <div class="topbar-right"><span class="status-dot" aria-hidden="true"></span>Post studio</div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Your ideas, in a better light</p>
+        <h1 id="page-title">Make every post <span>land beautifully.</span></h1>
+        <p class="intro-copy">Turn a rough thought into a Facebook post that sounds like you. Tell us what you want to say; we’ll shape it into something worth sharing.</p>
+        <div class="workflow" aria-label="How it works">
+          <div class="workflow-step"><span>01</span> Share your idea</div>
+          <div class="workflow-step"><span>02</span> Refine with research</div>
+          <div class="workflow-step"><span>03</span> Ready to post</div>
+        </div>
+      </section>
+
+      <section class="studio" aria-labelledby="studio-title">
+        <div class="studio-inner">
+          <div class="studio-head">
+            <div class="studio-title" id="studio-title">
+              <span class="studio-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2.2 11.8 8.2 17.8 10l-6 1.8-1.8 6-1.8-6L2.2 10l6-1.8L10 2.2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path>
+                  <path d="m15.7 2 .6 2 2 .6-2 .6-.6 2-.6-2-2-.6 2-.6.6-2Z" fill="currentColor"></path>
+                </svg>
+              </span>
+              Facebook post generator
+            </div>
+            <span class="secure-label">
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.2 6.7V4.9a3.8 3.8 0 0 1 7.6 0v1.8M3 6.7h10v7H3v-7Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="8" cy="10.1" r=".8" fill="currentColor"></circle></svg>
+              Your idea stays yours
+            </span>
+          </div>
+
+          <div class="studio-body">
+            <form id="post-form" novalidate>
+              <div class="field-head">
+                <label class="field-label" for="prompt">What would you like to post about?</label>
+                <span class="field-hint">A sentence or two is plenty</span>
+              </div>
+              <textarea class="prompt" id="prompt" name="query" minlength="2" maxlength="250" required
+                placeholder="e.g. Announcing our new neighborhood coffee shop and inviting everyone to our opening this Saturday…"
+                aria-describedby="char-count status-message"></textarea>
+              <div class="field-head" style="margin: 8px 2px 0">
+                <span class="field-hint">Need a spark? Try one of these</span>
+                <span class="count" id="char-count">0 / 250</span>
+              </div>
+              <div class="suggestions" aria-label="Example prompts">
+                <button class="suggestion" type="button" data-prompt="Announce a new product launch and invite people to discover what makes it special">Product launch</button>
+                <button class="suggestion" type="button" data-prompt="Share a behind-the-scenes moment from our small business and thank our community for their support">Small business story</button>
+                <button class="suggestion" type="button" data-prompt="Promote an upcoming community event and encourage local families to join us">Community event</button>
+              </div>
+              <div class="form-actions">
+                <span class="privacy-note">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.8 13 4v3.2c0 3.2-2.2 5.5-5 7-2.8-1.5-5-3.8-5-7V4l5-2.2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"></path><path d="m5.8 7.8 1.5 1.5 3-3.1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  Reviewed for clarity, tone, and useful context
+                </span>
+                <button class="generate" id="generate-button" type="submit">
+                  <svg class="sparkle" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m10 2 1.9 6.1L18 10l-6.1 1.9L10 18l-1.9-6.1L2 10l6.1-1.9L10 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>
+                  <span class="spinner" aria-hidden="true"></span>
+                  <span id="button-label">Create my post</span>
+                  <svg viewBox="0 0 16 12" fill="none" aria-hidden="true"><path d="M1 6h13m-4.5-4.5L14 6l-4.5 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+              </div>
+            </form>
+
+            <section class="result" aria-labelledby="result-title">
+              <div class="result-head">
+                <span class="result-label" id="result-title">Your polished post</span>
+                <button class="copy" id="copy-button" type="button" disabled>
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.1" y="5.1" width="8.2" height="9" rx="1.4" stroke="currentColor" stroke-width="1.1"></rect><path d="M10.8 5V3.3c0-.8-.6-1.4-1.4-1.4H3.3c-.8 0-1.4.6-1.4 1.4v6.1c0 .8.6 1.4 1.4 1.4H5" stroke="currentColor" stroke-width="1.1"></path></svg>
+                  Copy post
+                </button>
+              </div>
+              <div class="post-output is-placeholder" id="post-output" aria-live="polite">Your finished post will appear here, ready for its moment in the spotlight.</div>
+              <p class="message" id="status-message" role="status" aria-live="polite"></p>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-note">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m8 1.5 1.7 4.8 4.8 1.7-4.8 1.7L8 14.5l-1.7-4.8L1.5 8l4.8-1.7L8 1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+        A little more clarity. A lot more you.
+      </span>
+      <span class="footer-right">Thoughtful words, made simple.</span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const form = document.querySelector("#post-form");
+      const prompt = document.querySelector("#prompt");
+      const count = document.querySelector("#char-count");
+      const generateButton = document.querySelector("#generate-button");
+      const buttonLabel = document.querySelector("#button-label");
+      const output = document.querySelector("#post-output");
+      const copyButton = document.querySelector("#copy-button");
+      const statusMessage = document.querySelector("#status-message");
+      const video = document.querySelector("video.art");
+      const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const apiUrl = "http://127.0.0.1:8000/query";
+      let currentPost = "";
+
+      const syncVideoMotion = () => {
+        if (motionPreference.matches) {
+          video.pause();
+          return;
+        }
+        const playback = video.play();
+        if (playback) playback.catch(() => {});
+      };
+
+      const renderPostParagraph = (text) => {
+        const paragraph = document.createElement("p");
+        const boldPattern = /\*\*(.+?)\*\*/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = boldPattern.exec(text)) !== null) {
+          paragraph.append(document.createTextNode(text.slice(lastIndex, match.index)));
+          const strong = document.createElement("strong");
+          strong.textContent = match[1];
+          paragraph.append(strong);
+          lastIndex = boldPattern.lastIndex;
+        }
+
+        paragraph.append(document.createTextNode(text.slice(lastIndex)));
+        return paragraph;
+      };
+
+      syncVideoMotion();
+      if (motionPreference.addEventListener) {
+        motionPreference.addEventListener("change", syncVideoMotion);
+      } else {
+        motionPreference.addListener(syncVideoMotion);
+      }
+
+      const updateCount = () => {
+        count.textContent = `${prompt.value.length} / 250`;
+        prompt.removeAttribute("aria-invalid");
+      };
+
+      prompt.addEventListener("input", updateCount);
+
+      document.querySelectorAll(".suggestion").forEach((button) => {
+        button.addEventListener("click", () => {
+          prompt.value = button.dataset.prompt;
+          updateCount();
+          prompt.focus();
+        });
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const query = prompt.value.trim();
+        statusMessage.textContent = "";
+        statusMessage.removeAttribute("data-kind");
+
+        if (query.length < 2 || query.length > 250) {
+          prompt.setAttribute("aria-invalid", "true");
+          statusMessage.textContent = "Please enter between 2 and 250 characters.";
+          prompt.focus();
+          return;
+        }
+
+        generateButton.disabled = true;
+        generateButton.classList.add("is-loading");
+        buttonLabel.textContent = "Creating your post…";
+        statusMessage.textContent = "Shaping your idea and checking useful context…";
+        statusMessage.style.color = "#aab5c6";
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query })
+          });
+          let payload;
+          try {
+            payload = await response.json();
+          } catch {
+            const detail = window.location.protocol === "file:"
+              ? "Open http://127.0.0.1:8000/ in your browser so this page can reach the backend."
+              : `The backend returned an unreadable response (${response.status}).`;
+            throw new Error(detail);
+          }
+
+          if (!response.ok) {
+            const detail = typeof payload.detail === "string"
+              ? payload.detail
+              : `The server returned an error (${response.status}).`;
+            throw new Error(detail);
+          }
+
+          if (typeof payload.improved_post !== "string" || !payload.improved_post.trim()) {
+            throw new Error("The server response did not include an improved post.");
+          }
+
+          currentPost = payload.improved_post.trim();
+          const paragraphs = currentPost.split(/\n\s*\n/).map(renderPostParagraph);
+          output.replaceChildren(...paragraphs);
+          output.classList.remove("is-placeholder");
+          copyButton.disabled = false;
+          statusMessage.textContent = "Your post is ready to share.";
+          statusMessage.dataset.kind = "success";
+          statusMessage.style.color = "";
+        } catch (error) {
+          const message = error instanceof TypeError
+            ? "Could not reach the backend. Open http://127.0.0.1:8000/ in your browser and try again."
+            : error.message;
+          statusMessage.textContent = message || "Something went wrong while creating your post.";
+          statusMessage.removeAttribute("data-kind");
+          statusMessage.style.color = "";
+        } finally {
+          generateButton.disabled = false;
+          generateButton.classList.remove("is-loading");
+          buttonLabel.textContent = "Create my post";
+        }
+      });
+
+      copyButton.addEventListener("click", async () => {
+        if (!currentPost) return;
+        try {
+          await navigator.clipboard.writeText(currentPost);
+          statusMessage.textContent = "Copied — your post is ready to paste.";
+          statusMessage.dataset.kind = "success";
+        } catch {
+          statusMessage.textContent = "Clipboard access is unavailable in this browser. Select the post text to copy it.";
+          statusMessage.removeAttribute("data-kind");
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
